@@ -1,7 +1,6 @@
 import http from "http";
 
 
-
 let idCounter = 3;
 
 const students = [
@@ -20,24 +19,26 @@ const server = http.createServer((req, res) => {
 
   console.log(`[REQUEST] ${req.method} ${req.url}`);
 
-
   const studentsCount = students.length;
 
 
 
   if (req.url === "/students" && req.method === "GET") {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(students));
-  } else if (req.url === "/stats" && req.method === "GET") {
-    res.writeHead(200, { "Content-Type": "application/json" });
+    console.log("[GET /students] HANDLER START");
 
-    res.end(
-      JSON.stringify({
-        totalRequests,
-        studentsCount,
-        lastRequestTime,
-      })
-    );
+    setTimeout(() => {
+      console.log("[GET /students] TIMEOUT CALLBACK");
+
+      res.writeHead(200, {
+        "Content-Type": "application/json",
+      });
+
+      res.end(
+        JSON.stringify({
+          students: students,
+        })
+      );
+    }, 500);
   }
 
 
@@ -50,26 +51,79 @@ const server = http.createServer((req, res) => {
 
     req.on("end", () => {
       try {
-        const newStudent = JSON.parse(body);
+        const parsed = JSON.parse(body);
 
-        const student = {
+        const newStudent = {
           id: idCounter++,
-          name: newStudent.name,
-          age: newStudent.age,
+          name: parsed.name,
+          age: parsed.age,
         };
 
-        students.push(student);
+        students.push(newStudent);
 
-        res.writeHead(201, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(student));
+
+        setImmediate(() => {
+          console.log("[POST /students] AFTER PARSING BODY (setImmediate)");
+        });
+
+        res.writeHead(201, {
+          "Content-Type": "application/json",
+        });
+
+        res.end(JSON.stringify(students));
       } catch {
-        res.writeHead(400);
-        res.end("Invalid JSON");
+        res.writeHead(400, {
+          "Content-Type": "application/json",
+        });
+
+        res.end(
+          JSON.stringify({
+            error: "Invalid JSON",
+          })
+        );
       }
     });
-  } else {
-    res.writeHead(404);
-    res.end("Route not found");
+  }
+
+
+  else if (req.method === "POST") {
+    res.writeHead(405, {
+      "Content-Type": "application/json",
+    });
+
+    res.end(
+      JSON.stringify({
+        error: "Method Not Allowed",
+      })
+    );
+  }
+
+
+  else if (req.url === "/stats" && req.method === "GET") {
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+    });
+
+    res.end(
+      JSON.stringify({
+        totalRequests,
+        studentsCount,
+        lastRequestTime,
+      })
+    );
+  }
+
+
+  else {
+    res.writeHead(404, {
+      "Content-Type": "application/json",
+    });
+
+    res.end(
+      JSON.stringify({
+        error: "Not Found",
+      })
+    );
   }
 });
 
